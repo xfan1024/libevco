@@ -95,6 +95,29 @@ ssize_t CoroutineFile::write(CoroutineContext *ctx, const void *buf, size_t size
     return ::write(fd_, buf, size);
 }
 
+bool CoroutineFile::read_ensure(CoroutineContext *ctx, void *buf, size_t size) {
+    while (size > 0) {
+        ssize_t n = read(ctx, buf, size);
+        if (n <= 0) {
+            return false;
+        }
+        buf = (char *)buf + n;
+        size -= n;
+    }
+    return true;
+}
+bool CoroutineFile::write_ensure(CoroutineContext *ctx, const void *buf, size_t size) {
+    while (size > 0) {
+        ssize_t n = write(ctx, buf, size);
+        if (n <= 0) {
+            return false;
+        }
+        buf = (char *)buf + n;
+        size -= n;
+    }
+    return true;
+}
+
 int CoroutineFile::accept(CoroutineContext *ctx, sockaddr *addr, socklen_t *addrlen) {
     if (!check_before_io(true)) {
         return -1;

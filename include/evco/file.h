@@ -24,6 +24,9 @@ public:
     ssize_t read(CoroutineContext *ctx, void *buf, size_t size);
     ssize_t write(CoroutineContext *ctx, const void *buf, size_t size);
 
+    bool read_ensure(CoroutineContext *ctx, void *buf, size_t size);
+    bool write_ensure(CoroutineContext *ctx, const void *buf, size_t size);
+
     int accept(CoroutineContext *ctx, sockaddr *addr, socklen_t *addrlen);
 
 private:
