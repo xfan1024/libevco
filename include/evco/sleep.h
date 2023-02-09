@@ -5,9 +5,9 @@
 
 namespace evco {
 
-int sleep(CoroutineContext *ctx, unsigned int seconds);
-int msleep(CoroutineContext *ctx, unsigned int milliseconds);
-int usleep(CoroutineContext *ctx, unsigned int useconds);
+int sleep(Context *ctx, unsigned int seconds);
+int msleep(Context *ctx, unsigned int milliseconds);
+int usleep(Context *ctx, unsigned int useconds);
 
 }  // namespace evco
 

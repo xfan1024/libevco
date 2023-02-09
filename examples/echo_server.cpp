@@ -72,7 +72,7 @@ public:
     }
 
 protected:
-    void entry(evco::CoroutineContext *ctx) {
+    void entry(evco::Context *ctx) {
         char buf[1024];
         std::string str_addr;
         str_addr = sockaddr_to_string((sockaddr *)&remote_addr_);
@@ -101,7 +101,7 @@ protected:
 private:
     sockaddr_storage local_addr_;
     sockaddr_storage remote_addr_;
-    evco::CoroutineFile client_;
+    evco::File client_;
 };
 
 class Server {
@@ -110,7 +110,7 @@ public:
     }
 
 protected:
-    void entry(evco::CoroutineContext *ctx) {
+    void entry(evco::Context *ctx) {
         boost::intrusive::list<Client> client_list;
         sockaddr_storage addr;
         socklen_t addrlen = sizeof(addr);
@@ -123,7 +123,7 @@ protected:
 
             auto *client = new evco::Coroutine<Client>(cfd, (sockaddr *)&addr, addrlen);
             client_list.push_back(*client);
-            client->set_finish_callback([&client_list](evco::Coroutine<Client> *client) {
+            client->set_finish_callback([&client_list, client]() {
                 client_list.erase(client_list.iterator_to(*client));
                 delete client;
             });
@@ -139,12 +139,12 @@ protected:
     }
 
 private:
-    evco::CoroutineFile listener_;
+    evco::File listener_;
 };
 
 class KeyboardWatcher {
 protected:
-    std::string getline(evco::CoroutineContext *ctx) {
+    std::string getline(evco::Context *ctx) {
         std::string line;
         while (1) {
             char c;
@@ -159,7 +159,7 @@ protected:
         }
     }
 
-    void entry(evco::CoroutineContext *ctx) {
+    void entry(evco::Context *ctx) {
         std::string line;
         while (1) {
             line = getline(ctx);
@@ -179,7 +179,7 @@ protected:
     }
 
 private:
-    evco::CoroutineFile stdin_{STDIN_FILENO};
+    evco::File stdin_{STDIN_FILENO};
 };
 
 int main() {
@@ -187,7 +187,7 @@ int main() {
     int fd = create_server(6666, AF_INET6);
     evco::Coroutine<Server> server{fd};
     evco::Coroutine<KeyboardWatcher> keyboard_watcher;
-    keyboard_watcher.set_finish_callback([&server](evco::Coroutine<KeyboardWatcher> *) { server.interrupt(); });
+    keyboard_watcher.set_finish_callback([&server]() { server.interrupt(); });
     server.start(loop);
     keyboard_watcher.start(loop);
     ev_run(loop, 0);

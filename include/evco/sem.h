@@ -5,15 +5,15 @@
 
 namespace evco {
 
-class CoroutineSemaphore {
+class Semaphore {
 public:
-    CoroutineSemaphore(int count = 0);
+    Semaphore(int count = 0);
 
     void post();
-    int wait(CoroutineContext *ctx);
+    int wait(Context *ctx);
 
 private:
-    CoroutineFile file_;
+    File file_;
     int count_{0};
 };
 

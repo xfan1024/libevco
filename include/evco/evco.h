@@ -10,7 +10,7 @@
 
 namespace evco {
 
-struct CoroutineContext {
+struct Context {
     struct ev_loop *loop;
     std::function<void()> yield;
     std::function<void()> resume;
@@ -26,7 +26,7 @@ public:
     }
 
     ~Coroutine() {
-        if (running_) {
+        if (source_hoder_) {
             fprintf(stderr, "%s: coroutine is running, should report to developer to fix\n", __func__);
             abort();
         }
@@ -39,9 +39,8 @@ public:
     }
 
     void start(struct ev_loop *loop) {
+        assert(!source_hoder_);
         source_hoder_.emplace([&](boost::coroutines2::coroutine<void>::push_type &sink) {
-            assert(!running_);
-            running_ = true;
             context_.loop = loop;
             context_.yield = [&]() {
                 if (context_.pending) {
@@ -60,30 +59,37 @@ public:
                 context_.pending = false;
                 source();
                 if (!source) {
-                    running_ = false;
+                    source_hoder_.reset();
                     if (finish_) {
                         auto finish = std::move(finish_);
                         finish_ = nullptr;
-                        finish(this);
+                        finish();
                         // cannot operate on this after finish is called
                         // because finish_ may delete this
                     }
                 }
             };
+            context_.interrupted = false;
+            context_.pending = false;
             CoroutineImpl::entry(&context_);
         });
     }
 
+    bool is_running() {
+        return source_hoder_.has_value();
+    }
+
     // do not call this inside this coroutine
     void interrupt() {
-        context_.interrupted = true;
-        context_.resume();
+        if (source_hoder_) {
+            context_.interrupted = true;
+            context_.resume();
+        }
     }
 
 private:
-    bool running_{false};
-    std::function<void(Coroutine<CoroutineImpl> *self)> finish_;
-    CoroutineContext context_;
+    std::function<void()> finish_;
+    Context context_;
     std::optional<boost::coroutines2::coroutine<void>::pull_type> source_hoder_;
 };
 

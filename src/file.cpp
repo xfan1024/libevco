@@ -2,17 +2,17 @@
 
 namespace evco {
 
-CoroutineFile::CoroutineFile(int fd) {
+File::File(int fd) {
     if (fd >= 0) {
         set_fd(fd);
     }
 }
 
-CoroutineFile::~CoroutineFile() {
+File::~File() {
     close();
 }
 
-void CoroutineFile::set_fd(int fd) {
+void File::set_fd(int fd) {
     if (fd_ >= 0) {
         fprintf(stderr, "%s: fd should be negative, should report to developer to fix\n", __func__);
         close();
@@ -27,15 +27,15 @@ void CoroutineFile::set_fd(int fd) {
     req_write_ = nullptr;
 }
 
-int CoroutineFile::get_fd() {
+int File::get_fd() {
     return fd_;
 }
 
-bool CoroutineFile::is_open() {
+bool File::is_open() {
     return fd_ >= 0;
 }
 
-void CoroutineFile::release() {
+void File::release() {
     if (fd_ < 0) {
         return;
     }
@@ -50,8 +50,8 @@ void CoroutineFile::release() {
 
     fd_ = -1;
 
-    CoroutineContext *req_read = req_read_;
-    CoroutineContext *req_write = req_write_;
+    Context *req_read = req_read_;
+    Context *req_write = req_write_;
     req_read_ = nullptr;
     req_write_ = nullptr;
 
@@ -64,7 +64,7 @@ void CoroutineFile::release() {
     }
 }
 
-void CoroutineFile::close() {
+void File::close() {
     if (fd_ < 0) {
         return;
     }
@@ -73,7 +73,7 @@ void CoroutineFile::close() {
     ::close(fd);
 }
 
-ssize_t CoroutineFile::read(CoroutineContext *ctx, void *buf, size_t size) {
+ssize_t File::read(Context *ctx, void *buf, size_t size) {
     if (!check_before_io(true)) {
         return -1;
     }
@@ -84,7 +84,7 @@ ssize_t CoroutineFile::read(CoroutineContext *ctx, void *buf, size_t size) {
     return ::read(fd_, buf, size);
 }
 
-ssize_t CoroutineFile::write(CoroutineContext *ctx, const void *buf, size_t size) {
+ssize_t File::write(Context *ctx, const void *buf, size_t size) {
     if (!check_before_io(false)) {
         return -1;
     }
@@ -95,7 +95,7 @@ ssize_t CoroutineFile::write(CoroutineContext *ctx, const void *buf, size_t size
     return ::write(fd_, buf, size);
 }
 
-bool CoroutineFile::read_ensure(CoroutineContext *ctx, void *buf, size_t size) {
+bool File::read_ensure(Context *ctx, void *buf, size_t size) {
     while (size > 0) {
         ssize_t n = read(ctx, buf, size);
         if (n <= 0) {
@@ -106,7 +106,7 @@ bool CoroutineFile::read_ensure(CoroutineContext *ctx, void *buf, size_t size) {
     }
     return true;
 }
-bool CoroutineFile::write_ensure(CoroutineContext *ctx, const void *buf, size_t size) {
+bool File::write_ensure(Context *ctx, const void *buf, size_t size) {
     while (size > 0) {
         ssize_t n = write(ctx, buf, size);
         if (n <= 0) {
@@ -118,7 +118,7 @@ bool CoroutineFile::write_ensure(CoroutineContext *ctx, const void *buf, size_t 
     return true;
 }
 
-int CoroutineFile::accept(CoroutineContext *ctx, sockaddr *addr, socklen_t *addrlen) {
+int File::accept(Context *ctx, sockaddr *addr, socklen_t *addrlen) {
     if (!check_before_io(true)) {
         return -1;
     }
@@ -134,8 +134,8 @@ int CoroutineFile::accept(CoroutineContext *ctx, sockaddr *addr, socklen_t *addr
     return fd;
 }
 
-bool CoroutineFile::wait_io(CoroutineContext *ctx, bool rio) {
-    CoroutineContext *&req = rio ? req_read_ : req_write_;
+bool File::wait_io(Context *ctx, bool rio) {
+    Context *&req = rio ? req_read_ : req_write_;
     struct ev_io *io = rio ? &rio_ : &wio_;
 
     assert(req == nullptr);
@@ -163,7 +163,7 @@ bool CoroutineFile::wait_io(CoroutineContext *ctx, bool rio) {
     return true;
 }
 
-bool CoroutineFile::check_before_io(bool rio) {
+bool File::check_before_io(bool rio) {
     if (fd_ < 0) {
         errno = EBADF;
         fprintf(stderr, "%s: fd is invalid\n", __func__);
@@ -187,9 +187,9 @@ bool CoroutineFile::check_before_io(bool rio) {
     return true;
 }
 
-void CoroutineFile::handle_io_callback(bool rio, int revents) {
+void File::handle_io_callback(bool rio, int revents) {
     int expected_event = rio ? EV_READ : EV_WRITE;
-    CoroutineContext *context = rio ? req_read_ : req_write_;
+    Context *context = rio ? req_read_ : req_write_;
 
     if (revents & EV_ERROR) {
         fprintf(stderr, "%s: unknown EV_ERROR, should report to developer to fix\n", __func__);
@@ -202,15 +202,15 @@ void CoroutineFile::handle_io_callback(bool rio, int revents) {
     context->resume();
 }
 
-void CoroutineFile::read_cb(struct ev_loop *loop, struct ev_io *w, int revents) {
+void File::read_cb(struct ev_loop *loop, struct ev_io *w, int revents) {
     (void)loop;
-    CoroutineFile *cofile = (CoroutineFile *)w->data;
+    File *cofile = (File *)w->data;
     cofile->handle_io_callback(true, revents);
 }
 
-void CoroutineFile::write_cb(struct ev_loop *loop, struct ev_io *w, int revents) {
+void File::write_cb(struct ev_loop *loop, struct ev_io *w, int revents) {
     (void)loop;
-    CoroutineFile *cofile = (CoroutineFile *)w->data;
+    File *cofile = (File *)w->data;
     cofile->handle_io_callback(false, revents);
 }
 

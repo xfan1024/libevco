@@ -5,11 +5,11 @@ namespace evco {
 static void timer_cb(struct ev_loop *loop, struct ev_timer *w, int revents) {
     (void)loop;
     (void)revents;
-    CoroutineContext *ctx = (CoroutineContext *)w->data;
+    Context *ctx = (Context *)w->data;
     ctx->resume();
 }
 
-static int sleep_impl(CoroutineContext *ctx, double seconds) {
+static int sleep_impl(Context *ctx, double seconds) {
     if (seconds < 0) {
         errno = EINVAL;
         return -1;
@@ -30,15 +30,15 @@ static int sleep_impl(CoroutineContext *ctx, double seconds) {
     return 0;
 }
 
-int sleep(CoroutineContext *ctx, unsigned int seconds) {
+int sleep(Context *ctx, unsigned int seconds) {
     return sleep_impl(ctx, seconds);
 }
 
-int msleep(CoroutineContext *ctx, unsigned int milliseconds) {
+int msleep(Context *ctx, unsigned int milliseconds) {
     return sleep_impl(ctx, milliseconds / 1000.0);
 }
 
-int usleep(CoroutineContext *ctx, unsigned int useconds) {
+int usleep(Context *ctx, unsigned int useconds) {
     return sleep_impl(ctx, useconds / 1000000.0);
 }
 

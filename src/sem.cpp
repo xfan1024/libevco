@@ -13,7 +13,7 @@ static bool write_count(int f, uint64_t count) {
     return true;
 }
 
-CoroutineSemaphore::CoroutineSemaphore(int count) : count_(count) {
+Semaphore::Semaphore(int count) : count_(count) {
     int fd = eventfd(0, EFD_CLOEXEC | EFD_NONBLOCK | EFD_SEMAPHORE);
     assert(fd >= 0);
     file_.set_fd(fd);
@@ -22,13 +22,13 @@ CoroutineSemaphore::CoroutineSemaphore(int count) : count_(count) {
     }
 }
 
-void CoroutineSemaphore::post() {
+void Semaphore::post() {
     if (!write_count(file_.get_fd(), 1)) {
         abort();
     }
 }
 
-int CoroutineSemaphore::wait(CoroutineContext *ctx) {
+int Semaphore::wait(Context *ctx) {
     uint64_t count;
     ssize_t n = file_.read(ctx, &count, sizeof(count));
     if (n < 0) {
