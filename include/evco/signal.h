@@ -1,15 +1,19 @@
 #ifndef __evco_signal_h__
 #define __evco_signal_h__
 
-#include <evco/file.h>
+#include <evco/evco.h>
+
+#include <queue>
 
 namespace evco {
 
 class Signal {
 public:
     Signal();
+    ~Signal();
 
     void notify();
+    void notify_all();
     bool wait(Context *ctx);
 
     template <typename Pred>
@@ -23,8 +27,7 @@ public:
     }
 
 private:
-    bool pending_{false};
-    File file_;
+    std::queue<Context *> pending_ctxs_;
 };
 
 }  // namespace evco

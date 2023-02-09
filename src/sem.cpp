@@ -1,42 +1,33 @@
 #include <evco/sem.h>
-#include <sys/eventfd.h>
-#include <unistd.h>
+#include <stdio.h>
 
 namespace evco {
 
-static bool write_count(int f, uint64_t count) {
-    ssize_t n = ::write(f, &count, sizeof(count));
-    if (n != sizeof(count)) {
-        fprintf(stderr, "write eventfd failed: %s\n", strerror(errno));
-        return false;
-    }
-    return true;
+Semaphore::Semaphore(int count) : count_(count) {
 }
 
-Semaphore::Semaphore(int count) : count_(count) {
-    int fd = eventfd(0, EFD_CLOEXEC | EFD_NONBLOCK | EFD_SEMAPHORE);
-    assert(fd >= 0);
-    file_.set_fd(fd);
-    if (!write_count(fd, count)) {
-        abort();
-    }
+Semaphore::~Semaphore() {
+    fprintf(stderr, "%s: semaphore is pending, should report to developer to fix\n", __func__);
 }
 
 void Semaphore::post() {
-    if (!write_count(file_.get_fd(), 1)) {
-        abort();
+    if (pending_ctxs_.empty()) {
+        ++count_;
+        return;
     }
+    Context *ctx = pending_ctxs_.front();
+    pending_ctxs_.pop();
+    ctx->resume();
 }
 
-int Semaphore::wait(Context *ctx) {
-    uint64_t count;
-    ssize_t n = file_.read(ctx, &count, sizeof(count));
-    if (n < 0) {
-        return (int)n;
+bool Semaphore::wait(Context *ctx) {
+    if (count_ > 0) {
+        --count_;
+        return true;
     }
-    assert(n == sizeof(count));
-    assert(count == 1);
-    return 0;
+    pending_ctxs_.push(ctx);
+    ctx->yield();
+    return !ctx->interrupted;
 }
 
 }  // namespace evco

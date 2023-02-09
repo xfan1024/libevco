@@ -1,43 +1,39 @@
-#include <evco/file.h>
 #include <evco/signal.h>
-#include <sys/eventfd.h>
+#include <stdio.h>
 
 namespace evco {
 
 Signal::Signal() {
-    int fd = eventfd(0, EFD_CLOEXEC);
-    if (fd < 0) {
-        fprintf(stderr, "%s: failed to create eventfd: %s\n", __func__, strerror(errno));
+}
+
+Signal::~Signal() {
+    if (!pending_ctxs_.empty()) {
+        fprintf(stderr, "%s: signal is pending, should report to developer to fix\n", __func__);
         abort();
     }
-    file_.set_fd(fd);
 }
 
 void Signal::notify() {
-    if (!pending_) {
+    if (pending_ctxs_.empty()) {
         return;
     }
-    if (eventfd_write(file_.get_fd(), 1) < 0) {
-        fprintf(stderr, "%s: failed to write eventfd: %s\n", __func__, strerror(errno));
-        abort();
+    Context *ctx = pending_ctxs_.front();
+    pending_ctxs_.pop();
+    ctx->resume();
+}
+
+void Signal::notify_all() {
+    while (!pending_ctxs_.empty()) {
+        Context *ctx = pending_ctxs_.front();
+        pending_ctxs_.pop();
+        ctx->resume();
     }
 }
 
 bool Signal::wait(Context *ctx) {
-    if (pending_) {
-        fprintf(stderr, "%s: signal is already pending, cannot wait twice\n", __func__);
-        abort();
-    }
-    pending_ = true;
-    uint64_t value = 0;
-    ssize_t n = file_.read(ctx, &value, sizeof(value));
-    pending_ = false;
-    if (n < 0) {
-        return false;
-    }
-    assert(n == sizeof(value));
-    assert(value == 1);
-    return true;
+    pending_ctxs_.push(ctx);
+    ctx->yield();
+    return !ctx->interrupted;
 }
 
 }  // namespace evco
