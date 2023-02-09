@@ -2,8 +2,7 @@
 #define __evco_signal_h__
 
 #include <evco/evco.h>
-
-#include <queue>
+#include <evco/list.h>
 
 namespace evco {
 
@@ -27,7 +26,7 @@ public:
     }
 
 private:
-    std::queue<Context *> pending_ctxs_;
+    ListNode pending_ctxs_;
 };
 
 }  // namespace evco

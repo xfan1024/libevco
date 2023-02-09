@@ -2,8 +2,7 @@
 #define __evco_sem_h__
 
 #include <evco/evco.h>
-
-#include <queue>
+#include <evco/list.h>
 
 namespace evco {
 
@@ -16,7 +15,7 @@ public:
     bool wait(Context *ctx);
 
 private:
-    std::queue<Context *> pending_ctxs_;
+    ListNode pending_ctxs_;
     size_t count_{0};
 };
 

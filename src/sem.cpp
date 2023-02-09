@@ -7,7 +7,10 @@ Semaphore::Semaphore(int count) : count_(count) {
 }
 
 Semaphore::~Semaphore() {
-    fprintf(stderr, "%s: semaphore is pending, should report to developer to fix\n", __func__);
+    if (!pending_ctxs_.empty()) {
+        fprintf(stderr, "%s: %zu pending, should report to developer to fix\n", __func__, pending_ctxs_.size());
+        abort();
+    }
 }
 
 void Semaphore::post() {
@@ -15,9 +18,7 @@ void Semaphore::post() {
         ++count_;
         return;
     }
-    Context *ctx = pending_ctxs_.front();
-    pending_ctxs_.pop();
-    ctx->resume();
+    static_cast<ContextNode *>(pending_ctxs_.pop())->ctx->resume();
 }
 
 bool Semaphore::wait(Context *ctx) {
@@ -25,9 +26,16 @@ bool Semaphore::wait(Context *ctx) {
         --count_;
         return true;
     }
-    pending_ctxs_.push(ctx);
+    ContextNode node;
+    node.ctx = ctx;
+    pending_ctxs_.push(&node);
     ctx->yield();
-    return !ctx->interrupted;
+    node.unlink();
+    if (ctx->interrupted) {
+        errno = EINTR;
+        return false;
+    }
+    return true;
 }
 
 }  // namespace evco
