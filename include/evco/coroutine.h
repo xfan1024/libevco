@@ -9,17 +9,8 @@
 
 namespace evco {
 
-class Core {
-public:
-    Core(struct ev_loop *loop);
-    Core(const Core &) = delete;
-    Core &operator=(const Core &) = delete;
-
-    struct ev_loop *get_loop();
-
-private:
-    struct ev_loop *loop_;
-};
+void init(struct ev_loop *loop);
+void deinit();
 
 class Coroutine {
 public:
@@ -32,9 +23,7 @@ public:
     Coroutine(const Coroutine &) = delete;
     Coroutine &operator=(const Coroutine &) = delete;
 
-    Core *core();
-
-    void start(Core *core);
+    void start();
     void resume();
     void yield();
     void interrupt();
@@ -54,7 +43,6 @@ private:
 
     std::optional<SourceType> source_hoder_;
     SinkType *sink_ptr_{nullptr};
-    Core *core_ptr_{nullptr};
     std::function<void(void)> finish_callback_;
     bool interrupted_{false};
     bool pending_{false};

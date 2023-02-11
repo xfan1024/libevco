@@ -1,13 +1,26 @@
 #include <evco/coroutine.h>
 
+#include <thread>
+
+#include "evco_internal.h"
+
 namespace evco {
 
-Core::Core(struct ev_loop *loop) {
-    loop_ = loop;
+// declare thread local variable core
+
+void init(struct ev_loop *loop) {
+    if (current_loop() != nullptr) {
+        fprintf(stderr, "core is already initialized, should report to developer to fix\n");
+        abort();
+    }
+    current_loop(loop);
 }
 
-struct ev_loop *Core::get_loop() {
-    return loop_;
+void deinit() {
+    if (current_loop() == nullptr) {
+        fprintf(stderr, "warning: core is not initialized\n");
+    }
+    current_loop(nullptr);
 }
 
 class CoroutineHelper {
@@ -35,17 +48,10 @@ Coroutine ::~Coroutine() {
     assert(finish_callback_ == nullptr);
 }
 
-Core *Coroutine::core() {
-    CoroutineHelper::check_running_state(this, true, __func__, __LINE__);
-    assert(core_ptr_);
-    return core_ptr_;
-}
-
-void Coroutine::start(Core *core) {
+void Coroutine::start() {
     CoroutineHelper::check_running_state(this, false, __func__, __LINE__);
     source_hoder_.emplace([&](SinkType &sink) {
         sink_ptr_ = &sink;
-        core_ptr_ = core;
         pending_ = false;
         // cannot call yield() directly, the source_holder_ is not initialized yet
         // so, is_running() will return false. yield requires is_running() to be true
@@ -70,7 +76,6 @@ void Coroutine::resume() {
     } else {
         source_hoder_.reset();
         sink_ptr_ = nullptr;
-        core_ptr_ = nullptr;
         if (finish_callback_) {
             auto finish = std::move(finish_callback_);
             finish_callback_ = nullptr;

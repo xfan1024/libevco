@@ -1,5 +1,7 @@
 #include <evco/file.h>
 
+#include "evco_internal.h"
+
 namespace evco {
 
 static void setnonblocking(int fd) {
@@ -54,11 +56,11 @@ void File::release() {
     }
 
     if (req_read_) {
-        ev_io_stop(req_read_->core()->get_loop(), &rio_);
+        ev_io_stop(current_loop(), &rio_);
     }
 
     if (req_write_) {
-        ev_io_stop(req_write_->core()->get_loop(), &wio_);
+        ev_io_stop(current_loop(), &wio_);
     }
 
     fd_ = -1;
@@ -186,14 +188,14 @@ bool File::wait_io(Coroutine *co, bool rio) {
 
     assert(req == nullptr);
     req = co;
-    ev_io_start(co->core()->get_loop(), io);
+    ev_io_start(current_loop(), io);
     co->yield();
     if (fd_ < 0) {
         errno = EBADF;
         return false;
     }
     req = nullptr;
-    ev_io_stop(co->core()->get_loop(), io);
+    ev_io_stop(current_loop(), io);
 
     if (error_) {
         close();

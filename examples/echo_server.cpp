@@ -84,15 +84,13 @@ protected:
         printf("connected by %s\n", str_addr.c_str());
         while (1) {
             ssize_t nread = client_.read(this, buffer_, sizeof(buffer_));
-            if (nread < 0) {
-                return;
-            }
-            if (nread == 0) {
-                printf("connection closed by %s\n", str_addr.c_str());
+            if (nread <= 0) {
+                printf("disconnected %s\n", str_addr.c_str());
                 return;
             }
             data_->speeder->stat_rx(nread);
             if (!client_.write_ensure(this, buffer_, nread)) {
+                printf("disconnected %s\n", str_addr.c_str());
                 return;
             }
             data_->speeder->stat_tx(nread);
@@ -133,7 +131,7 @@ protected:
                 delete client;
             });
 
-            client->start(core());
+            client->start();
         }
 
         // remove all clients from list

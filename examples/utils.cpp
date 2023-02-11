@@ -6,13 +6,14 @@
 
 void example_run(evco::Coroutine **coroutines) {
     struct ev_loop *loop = ev_default_loop(0);
-    evco::Core core{loop};
+    evco::init(loop);
     while (*coroutines) {
-        (*coroutines)->start(&core);
+        (*coroutines)->start();
         ++coroutines;
     }
 
     ev_run(loop, 0);
+    evco::deinit();
     ev_loop_destroy(loop);
 }
 

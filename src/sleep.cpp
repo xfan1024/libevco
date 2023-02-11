@@ -1,5 +1,7 @@
 #include <evco/sleep.h>
 
+#include "evco_internal.h"
+
 namespace evco {
 
 static void timer_cb(struct ev_loop *loop, struct ev_timer *w, int revents) {
@@ -18,9 +20,9 @@ static bool sleep_impl(Coroutine *co, double seconds) {
     ev_timer timer;
     ev_timer_init(&timer, timer_cb, seconds, 0);
     timer.data = co;
-    ev_timer_start(co->core()->get_loop(), &timer);
+    ev_timer_start(current_loop(), &timer);
     co->yield();
-    ev_timer_stop(co->core()->get_loop(), &timer);
+    ev_timer_stop(current_loop(), &timer);
 
     if (co->is_interrupted()) {
         errno = EINTR;
