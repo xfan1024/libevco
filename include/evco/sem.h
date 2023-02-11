@@ -1,7 +1,7 @@
 #ifndef __evco_sem_h__
 #define __evco_sem_h__
 
-#include <evco/evco.h>
+#include <evco/coroutine.h>
 #include <evco/list.h>
 
 namespace evco {
@@ -12,7 +12,7 @@ public:
     ~Semaphore();
 
     void post();
-    bool wait(Context *ctx);
+    bool wait(Coroutine *co);
 
 private:
     ListNode pending_ctxs_;

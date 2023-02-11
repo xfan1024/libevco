@@ -5,41 +5,41 @@ namespace evco {
 static void timer_cb(struct ev_loop *loop, struct ev_timer *w, int revents) {
     (void)loop;
     (void)revents;
-    Context *ctx = (Context *)w->data;
-    ctx->resume();
+    Coroutine *co = (Coroutine *)w->data;
+    co->resume();
 }
 
-static int sleep_impl(Context *ctx, double seconds) {
+static bool sleep_impl(Coroutine *co, double seconds) {
     if (seconds < 0) {
         errno = EINVAL;
-        return -1;
+        return false;
     }
 
     ev_timer timer;
     ev_timer_init(&timer, timer_cb, seconds, 0);
-    timer.data = ctx;
-    ev_timer_start(ctx->loop, &timer);
-    ctx->yield();
-    ev_timer_stop(ctx->loop, &timer);
+    timer.data = co;
+    ev_timer_start(co->core()->get_loop(), &timer);
+    co->yield();
+    ev_timer_stop(co->core()->get_loop(), &timer);
 
-    if (ctx->interrupted) {
+    if (co->is_interrupted()) {
         errno = EINTR;
-        return -1;
+        return false;
     }
 
-    return 0;
+    return true;
 }
 
-int sleep(Context *ctx, unsigned int seconds) {
-    return sleep_impl(ctx, seconds);
+bool sleep(Coroutine *co, unsigned int seconds) {
+    return sleep_impl(co, seconds);
 }
 
-int msleep(Context *ctx, unsigned int milliseconds) {
-    return sleep_impl(ctx, milliseconds / 1000.0);
+bool msleep(Coroutine *co, unsigned int milliseconds) {
+    return sleep_impl(co, milliseconds / 1000.0);
 }
 
-int usleep(Context *ctx, unsigned int useconds) {
-    return sleep_impl(ctx, useconds / 1000000.0);
+bool usleep(Coroutine *co, unsigned int useconds) {
+    return sleep_impl(co, useconds / 1000000.0);
 }
 
 }  // namespace evco

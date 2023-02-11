@@ -1,7 +1,7 @@
 #ifndef __evco_wait_h__
 #define __evco_wait_h__
 
-#include <evco/evco.h>
+#include <evco/coroutine.h>
 #include <stddef.h>
 
 namespace evco {
@@ -52,12 +52,12 @@ public:
     }
 
 private:
-    struct ListNode *next;
-    struct ListNode *prev;
+    ListNode *next;
+    ListNode *prev;
 };
 
-struct ContextNode : ListNode {
-    Context *ctx;
+struct CoroutineNode : ListNode {
+    Coroutine *co;
 };
 
 }  // namespace evco

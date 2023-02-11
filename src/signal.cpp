@@ -8,7 +8,7 @@ Signal::Signal() {
 
 Signal::~Signal() {
     if (!pending_ctxs_.empty()) {
-        fprintf(stderr, "%s: %zu pending, should report to developer to fix\n", __func__, pending_ctxs_.size());
+        fprintf(stderr, "[%s:%d] %zu pending, should report to developer to fix\n", __func__, __LINE__, pending_ctxs_.size());
         abort();
     }
 }
@@ -17,22 +17,22 @@ void Signal::notify() {
     if (pending_ctxs_.empty()) {
         return;
     }
-    static_cast<ContextNode *>(pending_ctxs_.pop())->ctx->resume();
+    static_cast<CoroutineNode *>(pending_ctxs_.pop())->co->resume();
 }
 
 void Signal::notify_all() {
     while (!pending_ctxs_.empty()) {
-        static_cast<ContextNode *>(pending_ctxs_.pop())->ctx->resume();
+        static_cast<CoroutineNode *>(pending_ctxs_.pop())->co->resume();
     }
 }
 
-bool Signal::wait(Context *ctx) {
-    ContextNode node;
-    node.ctx = ctx;
+bool Signal::wait(Coroutine *co) {
+    CoroutineNode node;
+    node.co = co;
     pending_ctxs_.push(&node);
-    ctx->yield();
+    co->yield();
     node.unlink();
-    if (ctx->interrupted) {
+    if (co->is_interrupted()) {
         errno = EINTR;
         return false;
     }

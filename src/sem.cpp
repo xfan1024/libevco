@@ -8,7 +8,7 @@ Semaphore::Semaphore(int count) : count_(count) {
 
 Semaphore::~Semaphore() {
     if (!pending_ctxs_.empty()) {
-        fprintf(stderr, "%s: %zu pending, should report to developer to fix\n", __func__, pending_ctxs_.size());
+        fprintf(stderr, "[%s:%d] %zu pending, should report to developer to fix\n", __func__, __LINE__, pending_ctxs_.size());
         abort();
     }
 }
@@ -18,20 +18,20 @@ void Semaphore::post() {
         ++count_;
         return;
     }
-    static_cast<ContextNode *>(pending_ctxs_.pop())->ctx->resume();
+    static_cast<CoroutineNode *>(pending_ctxs_.pop())->co->resume();
 }
 
-bool Semaphore::wait(Context *ctx) {
+bool Semaphore::wait(Coroutine *co) {
     if (count_ > 0) {
         --count_;
         return true;
     }
-    ContextNode node;
-    node.ctx = ctx;
+    CoroutineNode node;
+    node.co = co;
     pending_ctxs_.push(&node);
-    ctx->yield();
+    co->yield();
     node.unlink();
-    if (ctx->interrupted) {
+    if (co->is_interrupted()) {
         errno = EINTR;
         return false;
     }

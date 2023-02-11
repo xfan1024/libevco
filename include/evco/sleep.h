@@ -1,13 +1,13 @@
 #ifndef __evco_sleep_h__
 #define __evco_sleep_h__
 
-#include <evco/evco.h>
+#include <evco/coroutine.h>
 
 namespace evco {
 
-int sleep(Context *ctx, unsigned int seconds);
-int msleep(Context *ctx, unsigned int milliseconds);
-int usleep(Context *ctx, unsigned int useconds);
+bool sleep(Coroutine *co, unsigned int seconds);
+bool msleep(Coroutine *co, unsigned int milliseconds);
+bool usleep(Coroutine *co, unsigned int useconds);
 
 }  // namespace evco
 
