@@ -1,6 +1,8 @@
 #include <evco/signal.h>
 #include <stdio.h>
 
+#include "evco_internal.h"
+
 namespace evco {
 
 Signal::Signal() {
@@ -26,8 +28,10 @@ void Signal::notify_all() {
     }
 }
 
-bool Signal::wait(Coroutine *co) {
+bool Signal::wait() {
+    Coroutine *co = current();
     CoroutineNode node;
+
     node.co = co;
     pending_ctxs_.push(&node);
     co->yield();

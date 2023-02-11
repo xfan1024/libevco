@@ -13,12 +13,12 @@ public:
 
     void notify();
     void notify_all();
-    bool wait(Coroutine *co);
+    bool wait();
 
     template <typename Pred>
-    bool wait(Coroutine *co, Pred pred) {
+    bool wait(Pred pred) {
         while (!pred()) {
-            if (!wait(co)) {
+            if (!wait()) {
                 return false;
             }
         }

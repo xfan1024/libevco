@@ -11,12 +11,13 @@ static void timer_cb(struct ev_loop *loop, struct ev_timer *w, int revents) {
     co->resume();
 }
 
-static bool sleep_impl(Coroutine *co, double seconds) {
+static bool sleep_impl(double seconds) {
     if (seconds < 0) {
         errno = EINVAL;
         return false;
     }
 
+    Coroutine *co = current();
     ev_timer timer;
     ev_timer_init(&timer, timer_cb, seconds, 0);
     timer.data = co;
@@ -32,16 +33,16 @@ static bool sleep_impl(Coroutine *co, double seconds) {
     return true;
 }
 
-bool sleep(Coroutine *co, unsigned int seconds) {
-    return sleep_impl(co, seconds);
+bool sleep(unsigned int seconds) {
+    return sleep_impl(seconds);
 }
 
-bool msleep(Coroutine *co, unsigned int milliseconds) {
-    return sleep_impl(co, milliseconds / 1000.0);
+bool msleep(unsigned int milliseconds) {
+    return sleep_impl(milliseconds / 1000.0);
 }
 
-bool usleep(Coroutine *co, unsigned int useconds) {
-    return sleep_impl(co, useconds / 1000000.0);
+bool usleep(unsigned int useconds) {
+    return sleep_impl(useconds / 1000000.0);
 }
 
 }  // namespace evco

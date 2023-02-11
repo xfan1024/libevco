@@ -8,9 +8,11 @@ namespace evco {
 class Coroutine;
 
 struct ev_loop *current_loop();
+void current_loop(struct ev_loop *loop);
+void current_loop_clear();
+
 Coroutine *current();
 void current(Coroutine *co);
-void current_loop(struct ev_loop *loop);
 
 }  // namespace evco
 

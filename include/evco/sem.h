@@ -12,7 +12,7 @@ public:
     ~Semaphore();
 
     void post();
-    bool wait(Coroutine *co);
+    bool wait();
 
 private:
     ListNode pending_ctxs_;

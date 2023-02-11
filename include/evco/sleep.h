@@ -5,9 +5,9 @@
 
 namespace evco {
 
-bool sleep(Coroutine *co, unsigned int seconds);
-bool msleep(Coroutine *co, unsigned int milliseconds);
-bool usleep(Coroutine *co, unsigned int useconds);
+bool sleep(unsigned int seconds);
+bool msleep(unsigned int milliseconds);
+bool usleep(unsigned int useconds);
 
 }  // namespace evco
 

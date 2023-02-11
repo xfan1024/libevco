@@ -34,7 +34,7 @@ protected:
         client_.set_fd(fd);
         const sockaddr *addr = (sockaddr *)&data_->server_addr;
         std::string str_addr = sockaddr_to_string(addr);
-        if (client_.connect(this, addr, sockaddr_len(addr)) < 0) {
+        if (client_.connect(addr, sockaddr_len(addr)) < 0) {
             if (errno == EINTR) {
                 return;
             }
@@ -43,15 +43,15 @@ protected:
         }
         data_->connected++;
         // wait for all clients connected
-        if (data_->signal.wait(this, [this]() { return data_->connected == data_->number; })) {
+        if (data_->signal.wait([this]() { return data_->connected == data_->number; })) {
             data_->signal.notify_all();
         }
 
         while (1) {
-            if (!client_.write_ensure(this, &buf[0], buf.size())) {
+            if (!client_.write_ensure(&buf[0], buf.size())) {
                 return;
             }
-            if (!client_.read_ensure(this, &buf[0], buf.size())) {
+            if (!client_.read_ensure(&buf[0], buf.size())) {
                 return;
             }
         }
@@ -70,7 +70,7 @@ public:
 
 protected:
     void entry() override {
-        evco::sleep(this, data_->timeout);
+        evco::sleep(data_->timeout);
     }
 
 private:

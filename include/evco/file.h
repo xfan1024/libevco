@@ -21,18 +21,18 @@ public:
     // close() equals to release() and close the fd
     void close();
 
-    ssize_t read(Coroutine *co, void *buf, size_t size);
-    ssize_t write(Coroutine *co, const void *buf, size_t size);
+    ssize_t read(void *buf, size_t size);
+    ssize_t write(const void *buf, size_t size);
 
-    bool read_ensure(Coroutine *co, void *buf, size_t size);
-    bool write_ensure(Coroutine *co, const void *buf, size_t size);
+    bool read_ensure(void *buf, size_t size);
+    bool write_ensure(const void *buf, size_t size);
 
-    int accept(Coroutine *co, sockaddr *addr, socklen_t *addrlen);
-    int connect(Coroutine *co, const sockaddr *addr, socklen_t addrlen);
+    int accept(sockaddr *addr, socklen_t *addrlen);
+    int connect(const sockaddr *addr, socklen_t addrlen);
 
 private:
     bool check_before_io(bool rio);
-    bool wait_io(Coroutine *co, bool rio);
+    bool wait_io(bool rio);
     void handle_io_callback(bool rio, int revents);
     static void read_cb(struct ev_loop *loop, struct ev_io *w, int revents);
     static void write_cb(struct ev_loop *loop, struct ev_io *w, int revents);

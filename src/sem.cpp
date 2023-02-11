@@ -1,6 +1,8 @@
 #include <evco/sem.h>
 #include <stdio.h>
 
+#include "evco_internal.h"
+
 namespace evco {
 
 Semaphore::Semaphore(int count) : count_(count) {
@@ -21,11 +23,13 @@ void Semaphore::post() {
     static_cast<CoroutineNode *>(pending_ctxs_.pop())->co->resume();
 }
 
-bool Semaphore::wait(Coroutine *co) {
+bool Semaphore::wait() {
     if (count_ > 0) {
         --count_;
         return true;
     }
+
+    Coroutine *co = current();
     CoroutineNode node;
     node.co = co;
     pending_ctxs_.push(&node);

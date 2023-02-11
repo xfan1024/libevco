@@ -88,31 +88,31 @@ void File::close() {
     ::close(fd);
 }
 
-ssize_t File::read(Coroutine *co, void *buf, size_t size) {
+ssize_t File::read(void *buf, size_t size) {
     if (!check_before_io(true)) {
         return -1;
     }
-    if (!wait_io(co, true)) {
+    if (!wait_io(true)) {
         return -1;
     }
 
     return ::read(fd_, buf, size);
 }
 
-ssize_t File::write(Coroutine *co, const void *buf, size_t size) {
+ssize_t File::write(const void *buf, size_t size) {
     if (!check_before_io(false)) {
         return -1;
     }
-    if (!wait_io(co, false)) {
+    if (!wait_io(false)) {
         return -1;
     }
 
     return ::write(fd_, buf, size);
 }
 
-bool File::read_ensure(Coroutine *co, void *buf, size_t size) {
+bool File::read_ensure(void *buf, size_t size) {
     while (size > 0) {
-        ssize_t n = read(co, buf, size);
+        ssize_t n = read(buf, size);
         if (n <= 0) {
             return false;
         }
@@ -121,9 +121,9 @@ bool File::read_ensure(Coroutine *co, void *buf, size_t size) {
     }
     return true;
 }
-bool File::write_ensure(Coroutine *co, const void *buf, size_t size) {
+bool File::write_ensure(const void *buf, size_t size) {
     while (size > 0) {
-        ssize_t n = write(co, buf, size);
+        ssize_t n = write(buf, size);
         if (n <= 0) {
             return false;
         }
@@ -133,11 +133,11 @@ bool File::write_ensure(Coroutine *co, const void *buf, size_t size) {
     return true;
 }
 
-int File::accept(Coroutine *co, sockaddr *addr, socklen_t *addrlen) {
+int File::accept(sockaddr *addr, socklen_t *addrlen) {
     if (!check_before_io(true)) {
         return -1;
     }
-    if (!wait_io(co, true)) {
+    if (!wait_io(true)) {
         return -1;
     }
 
@@ -149,7 +149,7 @@ int File::accept(Coroutine *co, sockaddr *addr, socklen_t *addrlen) {
     return fd;
 }
 
-int File::connect(Coroutine *co, const sockaddr *addr, socklen_t addrlen) {
+int File::connect(const sockaddr *addr, socklen_t addrlen) {
     int res = ::connect(fd_, addr, addrlen);
     if (res == 0) {
         // connected immediately
@@ -164,7 +164,7 @@ int File::connect(Coroutine *co, const sockaddr *addr, socklen_t addrlen) {
         return -1;
     }
 
-    if (!wait_io(co, false)) {
+    if (!wait_io(false)) {
         return -1;
     }
 
@@ -182,7 +182,8 @@ int File::connect(Coroutine *co, const sockaddr *addr, socklen_t addrlen) {
     return 0;
 }
 
-bool File::wait_io(Coroutine *co, bool rio) {
+bool File::wait_io(bool rio) {
+    Coroutine *co = current();
     Coroutine *&req = rio ? req_read_ : req_write_;
     struct ev_io *io = rio ? &rio_ : &wio_;
 

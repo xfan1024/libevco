@@ -33,7 +33,7 @@ public:
     void entry() override {
         while (1) {
             auto start = std::chrono::steady_clock::now();
-            if (!evco::sleep(this, 1)) {
+            if (!evco::sleep(1)) {
                 return;
             }
             if (tx_bytes_ == 0 && rx_bytes_ == 0) {
@@ -83,13 +83,13 @@ protected:
 
         printf("connected by %s\n", str_addr.c_str());
         while (1) {
-            ssize_t nread = client_.read(this, buffer_, sizeof(buffer_));
+            ssize_t nread = client_.read(buffer_, sizeof(buffer_));
             if (nread <= 0) {
                 printf("disconnected %s\n", str_addr.c_str());
                 return;
             }
             data_->speeder->stat_rx(nread);
-            if (!client_.write_ensure(this, buffer_, nread)) {
+            if (!client_.write_ensure(buffer_, nread)) {
                 printf("disconnected %s\n", str_addr.c_str());
                 return;
             }
@@ -117,7 +117,7 @@ protected:
         sockaddr_storage addr;
         socklen_t addrlen = sizeof(addr);
         while (1) {
-            int cfd = listener_.accept(this, (sockaddr *)&addr, &addrlen);
+            int cfd = listener_.accept((sockaddr *)&addr, &addrlen);
             if (cfd < 0) {
                 // closed
                 break;

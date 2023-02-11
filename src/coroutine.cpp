@@ -9,18 +9,11 @@ namespace evco {
 // declare thread local variable core
 
 void init(struct ev_loop *loop) {
-    if (current_loop() != nullptr) {
-        fprintf(stderr, "core is already initialized, should report to developer to fix\n");
-        abort();
-    }
     current_loop(loop);
 }
 
 void deinit() {
-    if (current_loop() == nullptr) {
-        fprintf(stderr, "warning: core is not initialized\n");
-    }
-    current_loop(nullptr);
+    current_loop_clear();
 }
 
 class CoroutineHelper {
@@ -61,6 +54,7 @@ void Coroutine::start() {
             return;
         }
         entry();
+        current(nullptr);
     });
     resume();
 }
@@ -70,7 +64,10 @@ void Coroutine::resume() {
     CoroutineHelper::check_running_state(this, true, __func__, __LINE__);
     CoroutineHelper::check_pending_state(this, true, __func__, __LINE__);
     pending_ = false;
+    Coroutine *old = current();
+    current(this);
     source();
+    current(old);
     if (source) {
         CoroutineHelper::check_pending_state(this, true, __func__, __LINE__);
     } else {
@@ -91,6 +88,7 @@ void Coroutine::yield() {
     CoroutineHelper::check_running_state(this, true, __func__, __LINE__);
     CoroutineHelper::check_pending_state(this, false, __func__, __LINE__);
     pending_ = true;
+    current(nullptr);
     sink();
     CoroutineHelper::check_pending_state(this, false, __func__, __LINE__);
 }
