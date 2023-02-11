@@ -70,6 +70,7 @@ class Client : public evco::Coroutine, public boost::intrusive::list_base_hook<>
 public:
     void init(RuntimeData *data, int fd, const sockaddr *addr, socklen_t addrlen) {
         data_ = data;
+        client_.set_fd(fd);
         memcpy(&remote_addr_, addr, addrlen);
         addrlen = sizeof(local_addr_);
         getsockname(fd, (sockaddr *)&local_addr_, &addrlen);
@@ -91,7 +92,7 @@ protected:
                 return;
             }
             data_->speeder->stat_rx(nread);
-            if (client_.write_ensure(this, buffer_, nread)) {
+            if (!client_.write_ensure(this, buffer_, nread)) {
                 return;
             }
             data_->speeder->stat_tx(nread);

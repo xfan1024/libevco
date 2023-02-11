@@ -1,4 +1,5 @@
 #include <evco/file.h>
+#include <evco/signal.h>
 #include <evco/sleep.h>
 #include <stdio.h>
 #include <sys/socket.h>
@@ -10,7 +11,10 @@
 
 struct RuntimeData {
     struct sockaddr_storage server_addr;
+    evco::Signal signal;
     int timeout;
+    int number;
+    int connected;
 };
 
 class Client : public evco::Coroutine {
@@ -36,6 +40,11 @@ protected:
             }
             fprintf(stderr, "connect to %s failed: %s\n", str_addr.c_str(), strerror(errno));
             return;
+        }
+        data_->connected++;
+        // wait for all clients connected
+        if (data_->signal.wait(this, [this]() { return data_->connected == data_->number; })) {
+            data_->signal.notify_all();
         }
 
         while (1) {
@@ -72,6 +81,8 @@ int echo_client_start(const char *server_addr, size_t number, int timeout) {
     RuntimeData data;
     data.server_addr = sockaddr_from_string(server_addr);
     data.timeout = timeout;
+    data.number = number;
+    data.connected = 0;
 
     if (data.server_addr.ss_family == AF_UNSPEC) {
         fprintf(stderr, "Invalid server address: %s\n", server_addr);
