@@ -64,7 +64,7 @@ private:
 
 class Timer : public evco::Coroutine {
 public:
-    Timer(RuntimeData *data) {
+    void init(RuntimeData *data) {
         data_ = data;
     }
 
@@ -90,7 +90,8 @@ int echo_client_start(const char *server_addr, size_t number, int timeout) {
     }
 
     std::unique_ptr<Client[]> clients = std::make_unique<Client[]>(number);
-    Timer timer(&data);
+    Timer timer{};
+    timer.init(&data);
     std::vector<evco::Coroutine *> coroutines;
 
     int need_timer = timeout > 0;
