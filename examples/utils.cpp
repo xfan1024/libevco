@@ -31,7 +31,7 @@ int create_server(const sockaddr *addr) {
         perror("bind");
         return -1;
     }
-    if (listen(fd, 1) < 0) {
+    if (listen(fd, 32) < 0) {
         perror("listen");
         return -1;
     }

@@ -1,4 +1,5 @@
 #include <evco/file.h>
+#include <evco/signal.h>
 #include <evco/sleep.h>
 #include <stdio.h>
 #include <sys/socket.h>
@@ -24,10 +25,12 @@ public:
 
     void stat_tx(size_t bytes) {
         tx_bytes_ += bytes;
+        signal_.notify();
     }
 
     void stat_rx(size_t bytes) {
         rx_bytes_ += bytes;
+        signal_.notify();
     }
 
     void entry() override {
@@ -37,6 +40,7 @@ public:
                 return;
             }
             if (tx_bytes_ == 0 && rx_bytes_ == 0) {
+                signal_.wait([this]() { return tx_bytes_ > 0 || rx_bytes_ > 0; });
                 continue;
             }
             auto end = std::chrono::steady_clock::now();
@@ -51,11 +55,11 @@ public:
 
 private:
     static std::string speed_to_string(size_t bytes) {
-        if (bytes < 1024) {
+        if (bytes < 10ull * 1024) {
             return std::to_string(bytes) + "B/s";
-        } else if (bytes < 1024 * 1024) {
+        } else if (bytes < 10ull * 1024 * 1024) {
             return std::to_string(bytes / 1024) + "KB/s";
-        } else if (bytes < 1024 * 1024 * 1024) {
+        } else if (bytes < 10ull * 1024 * 1024 * 1024) {
             return std::to_string(bytes / 1024 / 1024) + "MB/s";
         } else {
             return std::to_string(bytes / 1024 / 1024 / 1024) + "GB/s";
@@ -63,7 +67,8 @@ private:
     }
     size_t tx_bytes_{0};
     size_t rx_bytes_{0};
-    RuntimeData *data_;
+    evco::Signal signal_;
+    RuntimeData *data_{nullptr};
 };
 
 class Client : public evco::Coroutine, public boost::intrusive::list_base_hook<> {
@@ -98,11 +103,11 @@ protected:
     }
 
 private:
-    char buffer_[4096];
-    RuntimeData *data_;
-    sockaddr_storage local_addr_;
-    sockaddr_storage remote_addr_;
+    RuntimeData *data_{nullptr};
+    sockaddr_storage local_addr_{};
+    sockaddr_storage remote_addr_{};
     evco::File client_;
+    char buffer_[65536];
 };
 
 class Server : public evco::Coroutine {
@@ -126,7 +131,7 @@ protected:
             Client *client = new Client();
             client->init(data_, cfd, (sockaddr *)&addr, addrlen);
             client_list_.push_back(*client);
-            client->set_finish_callback([&, client]() {
+            client->set_finish_callback([&, client](evco::Coroutine *) {
                 client_list_.erase(client_list_.iterator_to(*client));
                 delete client;
             });
@@ -142,8 +147,8 @@ protected:
 
 private:
     boost::intrusive::list<Client> client_list_;
-    RuntimeData *data_;
     evco::File listener_;
+    RuntimeData *data_{nullptr};
 };
 
 int echo_server(const sockaddr *addr) {
@@ -160,7 +165,7 @@ int echo_server(const sockaddr *addr) {
     data.server = &server;
     data.speeder = &speeder;
 
-    server.set_finish_callback([&]() { speeder.interrupt(); });
+    server.set_finish_callback([&](evco::Coroutine *) { speeder.interrupt(); });
 
     evco::Coroutine *coroutines[] = {&server, &speeder, nullptr};
     example_run(coroutines);

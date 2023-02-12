@@ -89,6 +89,14 @@ void File::close() {
 }
 
 ssize_t File::read(void *buf, size_t size) {
+    ssize_t n = ::read(fd_, buf, size);
+    if (n >= 0) {
+        return n;
+    }
+    if (errno != EAGAIN && errno != EWOULDBLOCK) {
+        return n;
+    }
+
     if (!check_before_io(true)) {
         return -1;
     }
@@ -100,6 +108,14 @@ ssize_t File::read(void *buf, size_t size) {
 }
 
 ssize_t File::write(const void *buf, size_t size) {
+    ssize_t n = ::write(fd_, buf, size);
+    if (n >= 0) {
+        return n;
+    }
+    if (errno != EAGAIN && errno != EWOULDBLOCK) {
+        return n;
+    }
+
     if (!check_before_io(false)) {
         return -1;
     }
@@ -113,7 +129,11 @@ ssize_t File::write(const void *buf, size_t size) {
 bool File::read_ensure(void *buf, size_t size) {
     while (size > 0) {
         ssize_t n = read(buf, size);
-        if (n <= 0) {
+        if (n < 0) {
+            return false;
+        }
+        if (n == 0) {
+            errno = EPIPE;
             return false;
         }
         buf = (char *)buf + n;
@@ -124,7 +144,11 @@ bool File::read_ensure(void *buf, size_t size) {
 bool File::write_ensure(const void *buf, size_t size) {
     while (size > 0) {
         ssize_t n = write(buf, size);
-        if (n <= 0) {
+        if (n < 0) {
+            return false;
+        }
+        if (n == 0) {
+            errno = EPIPE;
             return false;
         }
         buf = (char *)buf + n;

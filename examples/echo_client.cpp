@@ -21,12 +21,11 @@ class Client : public evco::Coroutine {
 public:
     void init(RuntimeData *data) {
         data_ = data;
+        memset(buffer_, 'a', sizeof(buffer_));
     }
 
 protected:
     void entry() override {
-        std::vector<char> buf(4096, 'a');
-
         int fd = create_client(AF_INET);
         if (fd < 0) {
             return;
@@ -43,23 +42,30 @@ protected:
         }
         data_->connected++;
         // wait for all clients connected
-        if (data_->signal.wait([this]() { return data_->connected == data_->number; })) {
-            data_->signal.notify_all();
+        if (!data_->signal.fence([this]() { return data_->connected == data_->number; })) {
+            return;
         }
 
         while (1) {
-            if (!client_.write_ensure(&buf[0], buf.size())) {
+            if (!client_.write_ensure(buffer_, sizeof(buffer_))) {
+                if (errno != EINTR) {
+                    fprintf(stderr, "write failed: %s\n", strerror(errno));
+                }
                 return;
             }
-            if (!client_.read_ensure(&buf[0], buf.size())) {
+            if (!client_.read_ensure(buffer_, sizeof(buffer_))) {
+                if (errno != EINTR) {
+                    fprintf(stderr, "read failed: %s\n", strerror(errno));
+                }
                 return;
             }
         }
     }
 
 private:
-    RuntimeData *data_;
+    RuntimeData *data_{nullptr};
     evco::File client_;
+    char buffer_[65536];
 };
 
 class Timer : public evco::Coroutine {
@@ -74,7 +80,7 @@ protected:
     }
 
 private:
-    RuntimeData *data_;
+    RuntimeData *data_{nullptr};
 };
 
 int echo_client_start(const char *server_addr, size_t number, int timeout) {
@@ -96,7 +102,7 @@ int echo_client_start(const char *server_addr, size_t number, int timeout) {
 
     int need_timer = timeout > 0;
     coroutines.reserve(number + need_timer + 1);
-    auto finish_callback = [&]() {
+    auto finish_callback = [&](evco::Coroutine *co) {
         for (size_t i = 0; i < number; ++i) {
             // if not clean finish callback
             // this callback will run number times, in each time, this loop will run number times

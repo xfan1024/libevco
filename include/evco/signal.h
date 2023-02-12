@@ -25,6 +25,15 @@ public:
         return true;
     }
 
+    template <typename Pred>
+    bool fence(Pred pred) {
+        if (!pred()) {
+            return wait(pred);
+        }
+        notify_all();
+        return true;
+    }
+
 private:
     ListNode pending_ctxs_;
 };

@@ -19,12 +19,14 @@ void Signal::notify() {
     if (pending_ctxs_.empty()) {
         return;
     }
-    static_cast<CoroutineNode *>(pending_ctxs_.pop())->co->resume();
+    CoroutineNode *node = static_cast<CoroutineNode *>(pending_ctxs_.pop());
+    node->co->resume();
 }
 
 void Signal::notify_all() {
     while (!pending_ctxs_.empty()) {
-        static_cast<CoroutineNode *>(pending_ctxs_.pop())->co->resume();
+        CoroutineNode *node = static_cast<CoroutineNode *>(pending_ctxs_.pop());
+        node->co->resume();
     }
 }
 

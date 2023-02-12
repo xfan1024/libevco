@@ -29,7 +29,7 @@ public:
     void interrupt();
     bool is_running();
     bool is_interrupted();
-    void set_finish_callback(std::function<void(void)> fn);
+    void set_finish_callback(std::function<void(Coroutine *)> fn);
 
 protected:
     virtual void entry() = 0;
@@ -43,7 +43,7 @@ private:
 
     std::optional<SourceType> source_hoder_;
     SinkType *sink_ptr_{nullptr};
-    std::function<void(void)> finish_callback_;
+    std::function<void(Coroutine *)> finish_callback_;
     bool interrupted_{false};
     bool pending_{false};
 

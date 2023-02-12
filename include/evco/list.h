@@ -8,9 +8,6 @@ namespace evco {
 
 class ListNode {
 public:
-    ListNode() : next(this), prev(this) {
-    }
-
     bool empty() {
         return next == this;
     }
@@ -52,8 +49,8 @@ public:
     }
 
 private:
-    ListNode *next;
-    ListNode *prev;
+    ListNode *next{this};
+    ListNode *prev{this};
 };
 
 struct CoroutineNode : ListNode {
