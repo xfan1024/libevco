@@ -118,7 +118,7 @@ public:
     }
 
 protected:
-    void entry() {
+    void entry() override {
         sockaddr_storage addr;
         socklen_t addrlen = sizeof(addr);
         while (1) {

@@ -16,7 +16,7 @@ class Coroutine {
 public:
     Coroutine();
 
-    // I don't think the `vritual` is necessary here.
+    // I don't think the `virtual` is necessary here.
     // application shouldn't delete this base class pointer intead of derived class pointer.
     // add `virtual` here just to pass g++'s almost perverted code checks [-Werror=delete-non-virtual-dtor]
     virtual ~Coroutine();
