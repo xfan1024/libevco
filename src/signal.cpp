@@ -5,8 +5,7 @@
 
 namespace evco {
 
-Signal::Signal() {
-}
+Signal::Signal() {}
 
 Signal::~Signal() {
     if (!pending_ctxs_.empty()) {

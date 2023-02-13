@@ -32,6 +32,9 @@ public:
 };
 
 Coroutine::Coroutine() {
+    char buf[32];
+    snprintf(buf, sizeof(buf), "Coroutine<%p>", (void *)this);
+    name_ = buf;
 }
 
 Coroutine ::~Coroutine() {

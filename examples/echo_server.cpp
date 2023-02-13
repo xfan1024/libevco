@@ -1,10 +1,10 @@
 #include <evco/file.h>
+#include <evco/list.h>
 #include <evco/signal.h>
 #include <evco/sleep.h>
 #include <stdio.h>
 #include <sys/socket.h>
 
-#include <boost/intrusive/list.hpp>
 #include <vector>
 
 #include "utils.h"
@@ -71,7 +71,7 @@ private:
     RuntimeData *data_{nullptr};
 };
 
-class Client : public evco::Coroutine, public boost::intrusive::list_base_hook<> {
+class Client : public evco::Coroutine, public evco::ListNode {
 public:
     void init(RuntimeData *data, int fd, const sockaddr *addr, socklen_t addrlen) {
         data_ = data;
@@ -119,8 +119,10 @@ public:
 
 protected:
     void entry() override {
+        std::string client_base_name = "Client-";
         sockaddr_storage addr;
         socklen_t addrlen = sizeof(addr);
+
         while (1) {
             int cfd = listener_.accept((sockaddr *)&addr, &addrlen);
             if (cfd < 0) {
@@ -130,9 +132,10 @@ protected:
 
             Client *client = new Client();
             client->init(data_, cfd, (sockaddr *)&addr, addrlen);
-            client_list_.push_back(*client);
+            client->set_name(client_base_name + sockaddr_to_string((sockaddr *)&addr));
+            client_list_.push(client);
             client->set_finish_callback([&, client](evco::Coroutine *) {
-                client_list_.erase(client_list_.iterator_to(*client));
+                client->unlink();
                 delete client;
             });
 
@@ -141,12 +144,13 @@ protected:
 
         // remove all clients from list
         while (!client_list_.empty()) {
-            client_list_.front().interrupt();
+            Client *client = static_cast<Client *>(client_list_.pop());
+            client->interrupt();
         }
     }
 
 private:
-    boost::intrusive::list<Client> client_list_;
+    evco::ListNode client_list_;
     evco::File listener_;
     RuntimeData *data_{nullptr};
 };
@@ -164,6 +168,9 @@ int echo_server(const sockaddr *addr) {
     speeder.init(&data);
     data.server = &server;
     data.speeder = &speeder;
+
+    server.set_name("Server");
+    speeder.set_name("Speeder");
 
     server.set_finish_callback([&](evco::Coroutine *) { speeder.interrupt(); });
 

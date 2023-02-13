@@ -115,13 +115,16 @@ int echo_client_start(const char *server_addr, size_t number, int timeout) {
         timer.interrupt();
     };
 
+    std::string client_base_name = "Client-";
     for (size_t i = 0; i < number; i++) {
+        clients[i].set_name(client_base_name + std::to_string(i));
         clients[i].init(&data);
         clients[i].set_finish_callback(finish_callback);
         coroutines.push_back(&clients[i]);
     }
 
     if (need_timer) {
+        timer.set_name("Timer");
         timer.set_finish_callback(finish_callback);
         coroutines.push_back(&timer);
     }

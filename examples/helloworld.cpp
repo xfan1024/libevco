@@ -7,7 +7,9 @@ protected:
     void entry() override {
         while (1) {
             printf("hello world\n");
-            if (!evco::sleep(1)) return;
+            if (!evco::sleep(1)) {
+                return;
+            }
         }
     }
 };

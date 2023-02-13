@@ -30,6 +30,12 @@ public:
     bool is_running();
     bool is_interrupted();
     void set_finish_callback(std::function<void(Coroutine *)> fn);
+    void set_name(const std::string &name) {
+        name_ = name;
+    }
+    const std::string &get_name() {
+        return name_;
+    }
 
 protected:
     virtual void entry() = 0;
@@ -41,6 +47,7 @@ private:
     SourceType &source();
     SinkType &sink();
 
+    std::string name_;
     std::optional<SourceType> source_hoder_;
     SinkType *sink_ptr_{nullptr};
     std::function<void(Coroutine *)> finish_callback_;

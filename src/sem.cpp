@@ -5,8 +5,7 @@
 
 namespace evco {
 
-Semaphore::Semaphore(int count) : count_(count) {
-}
+Semaphore::Semaphore(int count) : count_(count) {}
 
 Semaphore::~Semaphore() {
     if (!pending_ctxs_.empty()) {
